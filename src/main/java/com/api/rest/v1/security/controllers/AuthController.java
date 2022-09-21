@@ -4,8 +4,10 @@ import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.mail.MessagingException;
 import javax.validation.Valid;
 
+import com.api.rest.v1.services.email.EmailServiceImp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +52,9 @@ public class AuthController {
 	@Autowired
 	JwtProvider jwtProvider;
 
+	@Autowired
+	EmailServiceImp emailServiceImp;
+
 	// ===============================================
 	// ============= MÉTODOS HTTP ==============
 	// ===============================================
@@ -77,7 +82,7 @@ public class AuthController {
 			@ApiResponse(code = 507,  message = "Almacenamiento Insuficiente por parte del Servidor.")
 			})
 	@PostMapping("/signin")
-	public ResponseEntity<?> signin(@Valid @RequestBody SigninUsuarioDTO signinUsuario, BindingResult bindingResult) {
+	public ResponseEntity<?> signin(@Valid @RequestBody SigninUsuarioDTO signinUsuario, BindingResult bindingResult) throws MessagingException {
 
 		if (signinUsuario.getNombre().isBlank() 
 				|| signinUsuario.getApellido().isBlank() 
@@ -117,6 +122,41 @@ public class AuthController {
 		usuario.setRoles(roles);
 
 		usuarioServiceImpl.addUsuario(usuario);
+
+		//Envío de emails
+		emailServiceImp.enviarEmail("Registro exitoso "+ usuario.getNombre(),
+
+				"<!DOCTYPE html>\n" +
+						"<html lang=\"en\">\n" +
+						"\n" +
+						"<head>\n" +
+						"    <meta charset=\"UTF-8\">\n" +
+						"    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
+						"    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+						"    <title>Document</title>\n" +
+						"</head>\n" +
+						"\n" +
+						"<body style=\"width: 800px\">\n" +
+						"    <div style=\"background-color: rgb(218, 45, 45);; width: 100%; padding: 3rem 0;\">\n" +
+						"        <div style=\"text-align: center; background-color: #ffffff; margin: 0 auto; width: 80%; border-radius: 8px;\">\n" +
+						"            <img style=\"margin-top: 3rem; width: 190px\"\n" +
+						"            <p style=\"margin: 1rem 0; font-size: 25px;\">Bienvenido</p>\n" +
+						"            <p style=\"color: #424242;\">Hola, <b>"+usuario.getNombre() + " " +usuario.getApellido()+"</b>, te has registrado exitosamente en el aplicativo electroThings,"+
+						" <br> ingresar al sistema:  \n" +
+						"            </p>\n" +
+						"            <div style=\"margin: 2rem auto; width: 120px; background-color: #4f46e5; padding: 8px; border-radius: 6px; \">\n" +
+						"                <a style=\"color: #ffffff; text-decoration: none\" href=\""+ "https://app-electro-things-angular-boo-git-683385-santiagoandresserrano.vercel.app/"+"\">Continuar</a>\n" +
+						"            </div>\n" +
+						"            <div style=\"width: 100%; border-top: 2px solid rgb(218, 45, 45);; padding: 1rem 0\">\n" +
+						"                <p>Copyright © 2022  <br> Todos los derechos reservados.</p>\n" +
+						"            </div>\n" +
+						"        </div>\n" +
+						"    </div>\n" +
+						"</body>\n" +
+						"\n" +
+						"</html>"
+
+				,usuario.getEmail());
 
 		return new ResponseEntity<SigninUsuarioDTO>(signinUsuario, HttpStatus.CREATED);
 	}
